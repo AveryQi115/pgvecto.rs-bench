@@ -1,0 +1,50 @@
+#!/usr/bin/python
+
+import h5py
+import psycopg2
+import psycopg2.extras
+
+DIMS = 100
+DATASET = "./../datasets/glove-100-angular.hdf5"
+DATABASE = "dbname=pgvectors user=bench host=127.0.0.1 port=5432"
+
+table_train = []
+table_test = []
+
+with h5py.File(DATASET, "r") as dataset:
+    DISTANCES = "distances"
+    NEIGHTBOURS = "neighbors"
+    TEST = "test"
+    TRAIN = "train"
+    N = 1183514
+    M = 10000
+    assert list(dataset.keys()) == [DISTANCES, NEIGHTBOURS, TEST, TRAIN]
+    distances = dataset[DISTANCES]
+    neighbors = dataset[NEIGHTBOURS]
+    test = dataset[TEST]
+    train = dataset[TRAIN]
+    for i in range(N):
+        index = i
+        embedding = str(list(train[i]))
+        table_train.append((index, embedding))
+    for i in range(M):
+        index = i
+        embedding = str(list(test[i]))
+        answer = list(map(lambda x: int(x), list(neighbors[i])))
+        table_test.append((index, embedding, answer))
+
+
+with psycopg2.connect(DATABASE) as conn:
+    DDL = """
+        DROP TABLE IF EXISTS test;
+        DROP TABLE IF EXISTS train;
+        CREATE TABLE train (id integer PRIMARY KEY, embedding vector({dims}) NOT NULL);
+        CREATE TABLE test (id integer PRIMARY KEY, embedding vector({dims}) NOT NULL, answer integer[] NOT NULL);
+    """
+    INSERT_TRAIN = "INSERT INTO train VALUES %s"
+    INSERT_TEST = "INSERT INTO test VALUES %s"
+
+    with conn.cursor() as cursor:
+        cursor.execute(DDL.format(dims = DIMS))
+        psycopg2.extras.execute_values(cursor, INSERT_TRAIN, table_train, page_size=32)
+        psycopg2.extras.execute_values(cursor, INSERT_TEST, table_test, page_size=32)

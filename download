@@ -1,0 +1,3 @@
+#!/bin/sh
+
+curl http://ann-benchmarks.com/glove-100-angular.hdf5 > ./datasets/glove-100-angular.hdf5

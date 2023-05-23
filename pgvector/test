@@ -1,0 +1,3 @@
+#!/bin/sh
+
+psql -U bench -d pgvector -a -f ./test.sql

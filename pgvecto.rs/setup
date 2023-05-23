@@ -1,0 +1,7 @@
+#!/bin/sh
+
+createuser bench
+dropdb pgvectors
+createdb pgvectors -O bench
+psql -U postgres -d pgvectors -c "DROP EXTENSION IF EXISTS vectors"
+psql -U postgres -d pgvectors -c "CREATE EXTENSION vectors"
