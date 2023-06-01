@@ -3,6 +3,7 @@
 import h5py
 import psycopg2
 import psycopg2.extras
+from math import sqrt
 
 DIMS = 100
 DATASET = "./../datasets/glove-100-angular.hdf5"
@@ -10,6 +11,18 @@ DATABASE = "dbname=pgvector user=bench host=127.0.0.1 port=5432"
 
 table_train = []
 table_test = []
+
+def length(x):
+    ans = 0.0
+    for i in range(DIMS):
+        ans += x[i] * x[i]
+    return sqrt(ans)
+
+def norm(x):
+    y = length(x)
+    for i in range(DIMS):
+        x[i] /= y
+    return x
 
 with h5py.File(DATASET, "r") as dataset:
     DISTANCES = "distances"
@@ -25,11 +38,11 @@ with h5py.File(DATASET, "r") as dataset:
     train = dataset[TRAIN]
     for i in range(N):
         index = i
-        embedding = str(list(train[i]))
+        embedding = str(norm(list(train[i])))
         table_train.append((index, embedding))
     for i in range(M):
         index = i
-        embedding = str(list(test[i]))
+        embedding = str(norm(list(test[i])))
         answer = list(map(lambda x: int(x), list(neighbors[i])))
         table_test.append((index, embedding, answer))
 

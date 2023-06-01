@@ -1,2 +1,3 @@
 .vscode
 datasets/glove-100-angular.hdf5
+.ignore
